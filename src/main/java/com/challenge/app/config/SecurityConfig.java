@@ -1,23 +1,32 @@
 package com.challenge.app.config;
 
+import com.challenge.app.config.security.AuthenticationManager;
+import com.challenge.app.config.security.support.JwtVerifyHandler;
+import com.challenge.app.config.security.support.ServerHttpBearerAuthenticationConverter;
+import com.challenge.app.config.security.support.ServerHttpCookieAuthenticationConverter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-
-import java.beans.Customizer;
-
-import static org.springframework.security.config.Customizer.withDefaults;
+import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
+import reactor.core.publisher.Mono;
 
 @Configuration
-@EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
+@Slf4j
 public class SecurityConfig {
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -25,27 +34,49 @@ public class SecurityConfig {
     }
 
     @Bean
-    public MapReactiveUserDetailsService mapReactiveUserDetailsService(PasswordEncoder passwordEncoder) {
-        UserDetails userDetails = User.builder()
-                .username("user")
-                .password(passwordEncoder.encode("user"))
-                .roles("USER")
-                .build();
-
-        return new MapReactiveUserDetailsService(userDetails);
-    }
-
-    @Bean
-    SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+    SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http, AuthenticationManager authManager) {
         http
                 .authorizeExchange(exchanges ->{
-                    exchanges.pathMatchers("public/api/user", "api/login").permitAll();
+                    exchanges.pathMatchers(HttpMethod.OPTIONS).permitAll();
+                    exchanges.pathMatchers("public/**", "/status", "/actuator/**").permitAll();
+                    //exchanges.pathMatchers("/favicon.ico").permitAll();
                     exchanges.anyExchange().authenticated();
                 })
-                .httpBasic(withDefaults())
-                .formLogin(withDefaults())
-                .csrf(ServerHttpSecurity.CsrfSpec::disable);
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .exceptionHandling(exceptionHandlingSpec -> {
+                    exceptionHandlingSpec.authenticationEntryPoint((swe, e) -> {
+                        log.info("[1] Authentication error: Unauthorized[401]: " + e.getMessage());
+
+                        return Mono.fromRunnable(() -> swe.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED));
+                    });
+                    exceptionHandlingSpec.accessDeniedHandler((swe, e) -> {
+                        log.info("[2] Authentication error: Access Denied[401]: " + e.getMessage());
+
+                        return Mono.fromRunnable(() -> swe.getResponse().setStatusCode(HttpStatus.FORBIDDEN));
+                    });
+                })
+                .addFilterAt(bearerAuthenticationFilter(authManager), SecurityWebFiltersOrder.AUTHENTICATION)
+                .addFilterAt(cookieAuthenticationFilter(authManager), SecurityWebFiltersOrder.AUTHENTICATION);
+
         return http.build();
+    }
+
+    AuthenticationWebFilter bearerAuthenticationFilter(AuthenticationManager authManager) {
+        AuthenticationWebFilter bearerAuthenticationFilter = new AuthenticationWebFilter(authManager);
+        bearerAuthenticationFilter.setAuthenticationConverter(new ServerHttpBearerAuthenticationConverter(new JwtVerifyHandler(jwtSecret)));
+        bearerAuthenticationFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/**"));
+
+        return bearerAuthenticationFilter;
+    }
+
+    AuthenticationWebFilter cookieAuthenticationFilter(AuthenticationManager authManager) {
+        AuthenticationWebFilter cookieAuthenticationFilter = new AuthenticationWebFilter(authManager);
+        cookieAuthenticationFilter.setAuthenticationConverter(new ServerHttpCookieAuthenticationConverter(new JwtVerifyHandler(jwtSecret)));
+        cookieAuthenticationFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/**"));
+
+        return cookieAuthenticationFilter;
     }
 
 }

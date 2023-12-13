@@ -10,8 +10,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Date;
 
 @Data
-@Document(collection="exchange")
-public class Exchange {
+@Document(collection="money_exchange")
+public class MoneyExchange {
 
     @Id
     private String id;
@@ -19,8 +19,10 @@ public class Exchange {
     private String origenCurrency;
     @NotEmpty
     private String destinyCurrency;
-    @NotNull
     private Double exchangeRate;
+    @NotNull
+    private Double amount;
+    private Double amountExchange;
     @CreatedDate
     private Date createdAt;
     private String userId;
