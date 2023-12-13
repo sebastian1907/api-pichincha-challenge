@@ -5,8 +5,13 @@ import com.challenge.app.repository.UserRepository;
 import com.challenge.app.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Date;
 
 @Slf4j
 @Service
@@ -15,18 +20,25 @@ public class UserServiceImpl implements UserService {
     @Autowired
     UserRepository userRepository;
 
-    /*public Mono<User> create(User user) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UserServiceImpl(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public Mono<User> createUser(User user) {
         return userRepository.save(user.toBuilder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
+                        .password(passwordEncoder.encode(user.getPassword()))
                         .roles(Collections.singletonList("ROLE_USER"))
-                        .enabled(Boolean.TRUE)
-                        .createdAt(LocalDateTime.now())
+                        .enabled(true)
+                        .createdAt(new Date())
                         .build())
                 .doOnSuccess(u -> log.info("Created new user with ID = " + u.getId()));
-    }*/
+    }
 
-    public Mono<User> getUser(Long userId) {
+    @Override
+    public Mono<User> getUser(String userId) {
         return userRepository.findById(userId);
     }
 }

@@ -6,7 +6,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
-public interface UserRepository extends ReactiveMongoRepository<User, Long> {
+public interface UserRepository extends ReactiveMongoRepository<User, String> {
 
-    Optional<User> findByEmail(String email);
+    Mono<User> findByUsername(String username);
 }

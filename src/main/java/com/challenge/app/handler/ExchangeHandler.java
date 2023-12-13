@@ -25,6 +25,9 @@ public class ExchangeHandler {
     @Autowired
     ExchangeService exchangeService;
 
+    //@Autowired
+    //JWTServiceImpl jwtServiceI;
+
     @Autowired
     Validator validator;
 

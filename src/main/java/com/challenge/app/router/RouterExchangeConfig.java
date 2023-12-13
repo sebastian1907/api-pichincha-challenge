@@ -1,4 +1,4 @@
-package com.challenge.app.config;
+package com.challenge.app.router;
 
 import com.challenge.app.handler.ExchangeHandler;
 import org.springframework.context.annotation.Bean;
@@ -10,7 +10,7 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 
 @Configuration
-public class RouterFunctionConfig {
+public class RouterExchangeConfig {
 
     @Bean
     public RouterFunction<ServerResponse> routes(ExchangeHandler exchangeHandler) {

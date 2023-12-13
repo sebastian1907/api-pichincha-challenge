@@ -1,4 +1,4 @@
-package com.challenge.app.entity;
+package com.challenge.app.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +13,7 @@ import java.util.Date;
 @NoArgsConstructor
 public class TokenInfo {
 
-    private Long userId;
+    private String userId;
     private String token;
     private Date issuedAt;
     private Date expiresAt;
