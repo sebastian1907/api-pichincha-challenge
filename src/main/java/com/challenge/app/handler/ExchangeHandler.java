@@ -19,6 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.Date;
 
 import static org.springframework.web.reactive.function.BodyInserters.fromValue;
@@ -51,9 +52,11 @@ public class ExchangeHandler {
                         .collectList()
                         .flatMap(list -> ServerResponse.badRequest().body(fromValue(list)));
             } else {
-                return exchangeService.save(exchange).flatMap(edb -> ServerResponse.created(URI.create("/api/exchange/".concat(edb.getId())))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(fromValue(edb)));
+                return exchangeService.findByCurrencies(exchange.getOrigenCurrency(), exchange.getDestinyCurrency())
+                        .flatMap(ex -> ServerResponse.badRequest().body(fromValue(Collections.singletonMap("mensaje","El tipo de cambio ya existe"))))
+                        .switchIfEmpty(exchangeService.save(exchange).flatMap(edb -> ServerResponse.created(URI.create("/api/exchange/".concat(edb.getId())))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(fromValue(edb))));
             }
         });
 

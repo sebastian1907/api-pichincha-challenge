@@ -39,7 +39,6 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges ->{
                     exchanges.pathMatchers(HttpMethod.OPTIONS).permitAll();
                     exchanges.pathMatchers("public/**", "/status", "/actuator/**").permitAll();
-                    //exchanges.pathMatchers("/favicon.ico").permitAll();
                     exchanges.anyExchange().authenticated();
                 })
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)

@@ -19,7 +19,7 @@ public class RouterExchangeConfig {
                 .andRoute(GET("/api/exchange"), exchangeHandler::listar)
                 .andRoute(GET("/api/exchange/{origenCurrency}/{destinyCurrency}"), exchangeHandler::ver)
                 .andRoute(PUT("/api/exchange/{id}"), exchangeHandler::editar)
-                .andRoute(GET("/api/exchange/amount"), exchangeHandler::cambiar)
+                .andRoute(POST("/api/exchange/amount"), exchangeHandler::cambiar)
                 .andRoute(POST("/public/api/user"), userHandler::crear)
                 .andRoute(POST("/public/api/login"), userHandler::login);
     }

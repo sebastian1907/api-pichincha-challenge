@@ -3,13 +3,11 @@ package com.challenge.app.handler;
 import com.challenge.app.dto.AuthResultDto;
 import com.challenge.app.dto.UserDto;
 import com.challenge.app.dto.UserLoginDto;
-import com.challenge.app.entity.Exchange;
 import com.challenge.app.entity.User;
 import com.challenge.app.service.JWTService;
 import com.challenge.app.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.Errors;
@@ -20,7 +18,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
-import java.util.Date;
 
 import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 
@@ -39,26 +36,27 @@ public class UserHandler {
     public Mono<ServerResponse> crear(ServerRequest serverRequest) {
 
         return serverRequest.bodyToMono(UserDto.class).flatMap(userDto -> {
-            Errors errors = new BeanPropertyBindingResult(userDto, UserDto.class.getName());
-            validator.validate(userDto, errors);
-            if (errors.hasErrors()){
-                return Flux.fromIterable(errors.getFieldErrors())
-                        .map(fieldError -> "El campo "+fieldError.getField()+" "+fieldError.getDefaultMessage())
-                        .collectList()
-                        .flatMap(list -> ServerResponse.badRequest().body(fromValue(list)));
-            } else {
-                User user = new User();
-                user.setUsername(userDto.getUsername());
-                user.setPassword(userDto.getPassword());
-                user.setFirstName(userDto.getFirstName());
-                user.setLastName(userDto.getLastName());
+                    Errors errors = new BeanPropertyBindingResult(userDto, UserDto.class.getName());
+                    validator.validate(userDto, errors);
+                    if (errors.hasErrors()) {
+                        return Flux.fromIterable(errors.getFieldErrors())
+                                .map(fieldError -> "El campo " + fieldError.getField() + " " + fieldError.getDefaultMessage())
+                                .collectList()
+                                .flatMap(list -> ServerResponse.badRequest().body(fromValue(list)));
+                    } else {
+                        User user = new User();
+                        user.setUsername(userDto.getUsername());
+                        user.setPassword(userDto.getPassword());
+                        user.setFirstName(userDto.getFirstName());
+                        user.setLastName(userDto.getLastName());
 
-                return userService.createUser(user).flatMap(userdb -> ServerResponse.created(URI.create("/api/user/".concat(userdb.getId())))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(fromValue(userdb)));
-            }
+                        return userService.createUser(user).flatMap(userdb -> ServerResponse.created(URI.create("/api/user/".concat(userdb.getId())))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(fromValue(userdb)));
+                    }
 
-        });
+                })
+                .onErrorResume(throwable -> ServerResponse.badRequest().body(fromValue(throwable.getMessage())));
     }
 
     public Mono<ServerResponse> login(ServerRequest serverRequest) {
